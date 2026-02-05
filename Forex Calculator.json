@@ -1,0 +1,353 @@
+{
+  "name": "Forex Calculator",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://v6.exchangerate-api.com/v6/6f8f4cd5f6e9c9f6c2b6a192/latest/USD",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        32,
+        -96
+      ],
+      "id": "ae3ac88e-b38f-49e9-afd5-469e95a60481",
+      "name": "HTTP Request",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Convert {{$json.amount}} {{$json.from_currency}} to {{$json.to_currency}} using the following exchange rates: {{$json.conversion_rates}}.\n\nReturn only the result in JSON format like:\n{\n  \"converted_amount\": <calculated_value>,\n  \"from_currency\": \"{{$json.from_currency}}\",\n  \"to_currency\": \"{{$json.to_currency}}\",\n  \"from_rate\": {{$json.conversion_rates[$json.from_currency]}},\n  \"to_rate\": {{$json.conversion_rates[$json.to_currency]}},\n  \"email\": \"{{$json.Email}}\"\n}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a currency converter. Use the Calculator tool to evaluate this expression:\n\n{{ $json.amount }} / {{ $json.conversion_rates[$json.from_currency] }} * {{ $json.conversion_rates[$json.to_currency] }}\n\nReturn only the result in JSON:\n{\n  \"converted_amount\": <number>\n}\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "a65ee79e-5285-47a5-90be-1c70933dfe0f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3-32b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        944,
+        224
+      ],
+      "id": "885b1bb4-3365-4760-95ed-f9a59aeeb4bc",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "cMuTY7xmwW2s3WME",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "FXConverter",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -304,
+        16
+      ],
+      "id": "de331297-9d56-4ecb-b44c-f43102bd5728",
+      "name": "Webhook",
+      "webhookId": "ba2e6a71-704f-4caf-b4d0-933637660573"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cc2d75db-ecc9-46e6-97ca-27d369b08335",
+              "name": "from_currency",
+              "value": "={{$json.body.data.fields[0].value}}",
+              "type": "string"
+            },
+            {
+              "id": "5769ee3a-ab66-46cd-b09b-1373fe43f6ff",
+              "name": "amount",
+              "value": "={{ Number($json.body.data.fields[1].value) }}",
+              "type": "number"
+            },
+            {
+              "id": "d72868c0-a99d-45c9-8ccb-2cb5e1195a2d",
+              "name": "to_currency",
+              "value": "={{$json.body.data.fields[2].value}}",
+              "type": "string"
+            },
+            {
+              "id": "8c3dd6ec-e18b-4b74-8b29-ea19eba557ec",
+              "name": "user_input",
+              "value": "=Convert {{$json.body.data.fields[0].value}} {{$json.body.data.fields[1].value}} to {{$json.body.data.fields[2].value}}",
+              "type": "string"
+            },
+            {
+              "id": "dab69558-f86f-4723-ba33-3fc42f0818ca",
+              "name": "Email",
+              "value": "={{ $json.body.data.fields[3].value }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        160
+      ],
+      "id": "2a3ff6ff-8aa2-41cc-88fa-65015067f887",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "68efb681-8849-4188-b528-5a70e38c7449",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"converted_amount\": \"123.45\",\n  \"from_currency\": \"QAR\",\n  \"to_currency\": \"INR\",\n  \"from_rate\": \"3.64\",\n  \"to_rate\": \"89.6676\",\n  \"email\": \"user@example.com\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1280,
+        240
+      ],
+      "id": "c245a295-2a34-4fdc-aeba-bba0551555b1",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        240
+      ],
+      "id": "c598a475-c44e-41c8-add2-6c3b0735f5c5",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "61ec6d7a-9acd-48d3-87c4-32d16d7e2d27",
+              "name": "from_currency",
+              "value": "={{ $json.from_currency }}",
+              "type": "string"
+            },
+            {
+              "id": "a976ad1a-eb1c-467a-875b-750436b7b594",
+              "name": "amount",
+              "value": "={{ $json.amount }}",
+              "type": "number"
+            },
+            {
+              "id": "33332805-4793-4f2c-9b00-9b204f7b1fa9",
+              "name": "to_currency",
+              "value": "={{ $json.to_currency }}",
+              "type": "string"
+            },
+            {
+              "id": "f72ef580-79f8-44d0-a4f2-f80660c7c601",
+              "name": "conversion_rates",
+              "value": "={{ $json.conversion_rates }}",
+              "type": "object"
+            },
+            {
+              "id": "c4145770-96c7-42cd-9513-7a6f5ca9923b",
+              "name": "Email",
+              "value": "={{ $json.Email }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        752,
+        0
+      ],
+      "id": "924d8049-a02c-4fad-82ed-ee3b7235e004",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.output.email }}",
+        "subject": "Your Currency Conversion Result",
+        "message": "=Hello,\nYour converted amount is {{ $json.output.to_currency }} {{ $json.output.converted_amount }}\n\nRates used are 1 USD = \n{{ $json.output.from_currency }} {{ $json.output.from_rate }}\n\n1 USD = \n{{ $json.output.to_currency }} {{ $json.output.to_rate }}\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1392,
+        0
+      ],
+      "id": "5f72b192-8b04-445c-9c9e-c41a554f399d",
+      "name": "Send a message",
+      "webhookId": "9652900d-223b-4e2e-8d2a-ddfb2b3ec517",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "SApjSSu9lIeCgIU8",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "47c32f1e-2dfb-40a1-9ff0-9e0bb4465fce",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3464b881d7b16fd309a972b06f43791c9b46cd80d79e9b702ad0e46999573782"
+  },
+  "id": "FxUJboHINPJdKfMj",
+  "tags": []
+}
