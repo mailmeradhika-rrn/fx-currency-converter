@@ -29,6 +29,3 @@ I architected an automated workflow using **n8n** that serves as a bridge betwee
 - **User Experience:** Provides a clean, form-based interface for users to interact with complex backend logic.
 
 ---
-
-## 📂 Files in this Repo
-- `Forex Calculator.json`: The full n8n workflow export.
